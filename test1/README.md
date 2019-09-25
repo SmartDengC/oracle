@@ -35,10 +35,13 @@ HAVING d.department_name in ('IT','Sales');
 
 
 ## 具体分析
+
 - 从sql语句出发
+
 这两个语句所输出的结果都是一样的，都包括字段(IT,Sales)，但是他们的执行效率不相同，语句一先使用where过滤数据，在使用group by语句对过滤之后的数据进行排序，使的在后面操作的数据会变少，而语句二则是先进行聚合函数having的使用，操作的是从数据库中查出来的原始数据，在使用where语句，明显是先刷选的所用时间较少。
 
 - 从输出结果参数来看
+
 对于sql语句的输出，这里需要注意的是后面数据的结果，其中比较重要的参数如下：
 
 | 属性 | 意义 |
@@ -48,5 +51,24 @@ HAVING d.department_name in ('IT','Sales');
 | redo size | DML生成的redo的大小 |
 
 可以看出查询一中recursive calls和consistent gets都要比查询二中的好，其余的一些都是相同，所以从结果数据来看，查询一优于查询二。
-2、理解having的具体含义？
-简单理解就是where无法对于group by之后的数据进行搜索，筛选分组后的各族数据
+
+### 优化结果
+![](./picture/sent1_up_1.png)
+![](./picture/sent2_up_1.png)
+
+# 自己构建查询语句
+
+```sql
+select d.department_name, e.first_name
+from hr.departments d, hr.employees e
+where e.department_id=d.department_id;
+```
+### 优化结果
+![](./picture/self_pic_1.png)
+
+### 授权
+```
+grant SELECT ANY DICTIONARY to "HR" with admin option  container=ALL;
+grant ADVISOR to "HR" with admin option  container=ALL;
+grant ADMINISTER SQL TUNING SET to "HR" with admin option  container=ALL;
+```
