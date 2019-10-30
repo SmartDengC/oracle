@@ -58,3 +58,16 @@ SYSTEM@192.168.44.183:1521/orclpdb>grant create  view to jet5devil with admin op
 
 # 删除表和序列并创建相应的表
 这里我创建一个叫做 test4.sql 的文件，在数据库中执行，进行对表的操作。
+注释：由于一些问题，未能在命令行中执行，后面在sql developer中执行创建表的过程。
+截取一些结果图片：
+表创建正确：
+![](./picture/createTable.png)
+# 执行一些sql语句
+
+![](./picture/select1.png)
+![](./picture/select2.png)
+![](./picture/select3.png)
+![](./picture/select4.png)
+查看文件大小
+
+![](./picture/selectSpace.png)
