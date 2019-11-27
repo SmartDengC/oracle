@@ -1,4 +1,3 @@
- 
 # 秒杀系统数据设计
 ## 一、引言
 无论是双十一还是12306的购票系统，秒杀场景已经随处可见了。简单来说就是在同一时刻大量的数据情求与同一件商品并完成交易，从架构的角度来看，秒杀系统本质是一个高可用，高一致性高性能的三高系统 ，数据库的设计也是在抗并发的解决措施里面，本数据库设计则是应用于此类秒杀系统中。
@@ -8,34 +7,45 @@
 ### 实体属性：
 #### 商品实体：
 属性的意思分别为goods_name（商品名称），goods_title（商品标题），goods_img（商品图片），goods_details（商品的详细描述），goods_prices（商品价格），goods_stack（商品的库存）。
+![](./pictures/2.png)
  
 #### 秒杀商品实体：
 Miaosha_price（秒杀价格），goods_id（商品id），start_date（开始秒杀的时间），end_date（秒杀结束的时间），stock_count（库存数量）。
  
+![](./pictures/3.png)
 #### 秒杀信息实体；
 message_id(信息id), content(信息内容), over_time(结束时间), status(状态), create_time(创建时间), good_name(商品名称), price(价格), send_type(发送类型), message_type(0 秒杀消息 1 购买消息 2 推送消息).
  
+![](./pictures/4.png)
 
-####秒杀用户实体；
+#### 秒杀用户实体；
 Nickname(昵称), password(密码), salt， head(头像), register_date(注册日期), last_login_date(最后登录日期), login_count(登录次数).
  
+![](./pictures/5.png)
 
 #### 订单详情实体：
 User_id(用户id), goods_id(商品id), delivery_addr_id(邮寄方式), goods_name(商品名称), goods_price(商品价格), order_chnner(1pc，2android，3ios), status(订单状态), create_date(创建日期), pay_date(付款日期).
+
+![](./pictures/6.png)
  
+
 #### 关联表：
 miaosha_order（秒杀-订单-商品），是将用户，商品、订单三张表关联起来的数据表。
+![](./pictures/7.png)
  
 Miaosha_message_user（用户-信息-商品-订单），是将用户、商品、信息、订单关联起来的表。
+
+![](./pictures/8.png)
  
 
-#### E-R图
+##### E-R图
 简易的e-r图，如下：
  
+![](./pictures/9.png)
 
 
-### 三、表和数据添加
-#### 一、建表和插入数据
+## 三、表和数据添加
+### 一、建表和插入数据
 如下是本次数据库的建表sql，使用的是pl/sql语言写的一个文件。
 在建表之前应该判断数据库中是否有该表的存在，如果有删除，如果没有，则执行建表语句。
 这里使用的是查找该表中的数据条数，来判断是是否有表，然后执行drop table 来删除表。Declare表示申明，begin表示执行开始，需要在结尾加上end；/ 表示执行以上所有代码。
@@ -84,6 +94,7 @@ begin
       end   if;
 end;
 /
+
 ```
 以下是建表语句，根据数据字段的设计，在数据库中设计数据库表，这里不赘述。
 ```sql
@@ -170,9 +181,9 @@ CREATE TABLE ORDER_INFOR (
   PAY_DATE DATE DEFAULT NULL
 ) ;
 ```
-#### 二、数据库表导入相应数据
+### 二、数据库表导入相应数据
 使用pl/sql语句来添加数据。
-##### --1、向goods表中添加数据
+#### --1、向goods表中添加数据
 这里定义了6个数组，数据库表中的每个字段随机从每个数组中选取数据，构成一个记录，插入到数据库中相应表中，数据条数为10000条。
 ```sql
 set SERVEROUTPUT ON;
@@ -214,9 +225,11 @@ DECLARE
  
  END;
  /
+
 ```
-##### --2、向miaosha_goods中添加数据
+#### --2、向miaosha_goods中添加数据
 使用for loop语句构造2到2000 的数据，然后根据i值的不同，其后的数据相同，数据条数为2000条，插入到数据库中。
+```sql
 declare
     result number;
 begin
@@ -238,9 +251,8 @@ begin
 end;
 /
 
-##### --3、向miaosha_message 中添加数据
+#### --3、向miaosha_message 中添加数据
 如上面的导入数据方式，使用i值的不同，构造不同记录。
-```sql
 declare
 begin
     for i in 2..5000
@@ -250,7 +262,7 @@ begin
 end;
 /
 
--- miaosha_user
+#### -- miaosha_user
 declare
     id number;
     user_id number;
@@ -268,10 +280,8 @@ begin
     end loop;
 end;
 /
-```
-##### --4、向order_info中添加数据
+#### --4、向order_info中添加数据
 导入order_info使用的是循环loop….end，创建变量order_id,user_id，goods_id，并赋以初值，然后在执行完一条insert之后，是这些变量的值进行相应的改变，达到数据导入的目的。
-```sql
 DECLARE
 --    INSERT INTO `order_info` VALUES ('1564', '18912341234', '3', null, 'iphone8', '1', '0.01', '1', '0', '2017-12-16 16:35:20', null);
     ORDER_ID NUMBER;
@@ -292,13 +302,15 @@ BEGIN
     END LOOP;
 END;
 /
+
 ```
-### 四、ORACLE中相关配置
+## 四、ORACLE中相关配置
 首先就是新建pdb 的操作，oracle没有办法对cdb进行操作，只能操作pdb，所以在oracle中的开始，我就需要新建一个pdb数据库，以上的相关操作，都是建立在这次之后的操作，这里新建一个salespdb的pdb数据库。
 大致解释以下语句的含义：
 Create pluggable database 就是新建一个pdb的语句，其中salespdb是数据库的名称，然后就是用户名和密码，使用的tablespace的大小，默认的存储文件地址。
 ```sql
 CREATE PLUGGABLE DATABASE salespdb ADMIN USER sale5deng IDENTIFIED BY sale5deng STORAGE (MAXSIZE 2G) DEFAULT TABLESPACE sales DATAFILE '/database/oracle/oracle/oradata/orcl/salespdb/sales01.dbf' SIZE 250M AUTOEXTEND ON PATH_PREFIX = '/database/oracle/oracle/oradata/orcl/salespdb/' FILE_NAME_CONVERT = ('/database/oracle/oracle/oradata/orcl/pdbseed/', '/database/oracle/oracle/oradata/orcl/salespdb/');
+```
 #### 一、表设计
 创建表空间的过程，创建了三个表空间，分别叫做sales，sales02，sales03，大小最大为50M，数据文件存放在/database/oracle/oracle/oradata/orcl/orclpdb/目录下面。
 ```sql
@@ -316,17 +328,18 @@ CREATE TABLESPACE USERS02
 DATAFILE '/database/oracle/oracle/oradata/orcl/ salespdb / sales03.dbf' 
 SIZE 100M AUTOEXTEND ON NEXT 50M MAXSIZE UNLIMITED 
 EXTENT MANAGEMENT LOCAL SEGMENT SPACE MANAGEMENT AUTO;
-```
-### 二、用户管理
-创建用户
-这里创建了两个用户，分别叫做sale5deng和buyer5deng
 
+```
+#### 二、用户管理
+##### 创建用户
+这里创建了两个用户，分别叫做sale5deng和buyer5deng
+```sql
 SYSTEM@192.168.44.183:1521/salespdb>create role sales5deng identified sales5deng;
 角色已创建。
 
 SYSTEM@192.168.44.183:1521/salespdb>create role buyer5deng identified buyer5deng;
 角色已创建。
-权限配置
+##### 权限配置
 给刚创建的两个用户添加connect，resource，create view的权限
 
 SYSTEM@192.168.44.183:1521/salespdb>grant connect, resource, CREATE VIEW TO sales5deng;
@@ -334,8 +347,10 @@ SYSTEM@192.168.44.183:1521/salespdb>grant connect, resource, CREATE VIEW TO sale
 
 SYSTEM@192.168.44.183:1521/salespdb>grant connect, resource, CREATE VIEW TO buyer5deng;
 授权成功。
-表空间分配
+```
+##### 表空间分配
 数据库中有三个刚才创建的表空间，分别为sales，sales02，sales03.
+```sql
 SYSTEM@192.168.44.229:1521/salespdb>select tablespace_name from user_tablespaces;
 
 TABLESPACE_NAME
@@ -349,8 +364,9 @@ SALES02
 SALES03
 
 已选择 7 行。
+```
 
-### 三、PL/SQL设计
+#### 三、PL/SQL设计
 查找miaosha_order 表中的数据，使用miaosha_user的user_id，使用存储过程queryUser传入user_id，从miasha_order表中查出相应的数据记录，然后取出goods，使用goods_id，在miaosha_goods中进行查询，查询出相应的记录
 ```sql
 set serveroutput on;
@@ -392,8 +408,8 @@ name
 
 PL/SQL 过程已成功完成。
 ```
-### 四、备份设计
-备份
+#### 四、备份设计
+##### 备份
 从虚拟机中拷贝出脚本文件rman_leve10.sh(全备份)，rman_level1.sh(增量备份)，查看脚本内容
 ```sql
 [oracle@oracle-pc ~]$ cat rman_level0.sh 
@@ -426,33 +442,88 @@ release channel c1;
 EOF
 
 exit
+```
 在用户oracle下运行脚本rman_level10.sh，
+
+![](./pictures/10.png)
  
 *.log 是日志文件
 Dblv0*.bak 是数据库的备份文件
 arclv0*.bak是归档日期的备份文件
 c-1392946895-20191120-01是控制文件和参数的备份。
-修改数据
+###### 修改数据
+```sql
 [oracle@oracle-pc ~]$ sqlplus study/123@pdborcl
-SQL> create table t1 (id number,name varchar2(50));
+SQL> create table t2 (id number,name varchar2(50));
 Table created.
-SQL> insert into t1 values(1,'zhang');
+SQL> insert into t2 values(1,'zhang');
 1 row created.
 SQL> commit;
 Commit complete.
-SQL> select * from t1;
+SQL> select * from t2;
 
         ID NAME
 ---------- --------------------------------------------------
          1 zhang
 SQL> exit
-```
 
-删除数据
+```
+![](./pictures/11.png)
+
+##### 删除数据
+```sql
 [oracle@oraclepc~]$ rm/home/oracle/app/oracle/oradata/orcl/pdborcl/SAMPLE_SCHEMA_users01.dbf
-恢复数据
+
+挂载数据库到mount状态
+SQL> shutdown immediate
+ORA-01116: 打开数据库文件 10 时出错
+ORA-01110: 数据文件 10: '/home/oracle/app/oracle/oradata/orcl/pdborcl/SAMPLE_SCHEMA_users01.dbf'
+ORA-27041: 无法打开文件
+Linux-x86_64 Error: 2: No such file or directory
+Additional information: 3
+SQL> shutdown abort
+ORACLE instance shut down.
+SQL> startup mount
+ORACLE instance started.
+
+Total System Global Area 1577058304 bytes
+Fixed Size                  2924832 bytes
+Variable Size             738201312 bytes
+Database Buffers          654311424 bytes
+Redo Buffers               13848576 bytes
+In-Memory Area            167772160 bytes
+Database mounted.
+SQL>
+ 
+ ```
+![](./pictures/12.png)
+#### 恢复数据
+```sql
 [oracle@oracle-pc ~]$ rman target /
 RMAN> restore database ;
-五、所遇到的问题和如何解决的
-一、容灾实验过程 中，无法使用rman登录到指定的数据。
+
+ ```
+![](./pictures/13.png)
+## 五、所遇到的问题和如何解决的
+####①、lsnrctl status 无监听
+使用lsnrctl start来开启监听，但是在开启的过程中，监听要去寻找一个叫做listen.ora的文件，当时我将此文件更名为listen.ora.bak，所以在启动的时候没有找到文件，一直没有启动起来。
+Lsnrctl的基本操作有server，start，stop。
+
+#### ②、ORACEL12C ORA-01033: ORACLE 正在初始化或关闭 进程 ID: 0 会话 ID: 0 序列号: 0
+Oracle 中和其他版本的数据的启动关闭都是一样的，但是12c中有一个特殊点，就是在启动的时候需要修改会话到链接的pdb上面。例如：alter session set container=orclpdb.
+参考下面地址：https://www.jianshu.com/p/5571e0413ff4
+
+#### ③、容灾实验过程 中，无法使用rman登录到指定的数据。
 这里是我在填写监听的时候，还是写的是orcl，不是stdorcl，所以使用rman target sys1/123@stdorcl则是无法登录的。
+ 
+
+![](./pictures/14.png)
+#### ④、SQL Oracle 查询出来的数据取第一条
+```sql
+select * from (select * from <table> order by <key>) where rownum=1;
+
+select * from (select * from <table> order by <key> desc) where rownum=1;
+```
+
+#### ⑤、使用sys或system用户登录，却没有权限？
+Sqlplus “/ as sysdba” 这样登录进去、
